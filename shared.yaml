@@ -1,0 +1,76 @@
+components:
+  securitySchemes:
+    OIDC:
+      type: openIdConnect
+      openIdConnectUrl: https://auth.sumup.com/.well-known/openid-configuration
+    ApiKey:
+      type: http
+      scheme: bearer
+      bearerFormat: opaque
+    OAuth2:
+      type: oauth2
+      description: |
+        At SumUp authentication uses your API credentials and Basic HTTP auth. The API credentials consist of a `client_id` and `client_secret` key-value pair.
+        It is possible to create multiple API credentials for each of the applications you connect with your SumUp account.
+        Use the API credentials as an authorization header for requests that require such.
+
+        Authorization
+        ---------
+        SumUp uses the <a href='https://tools.ietf.org/html/rfc6749' target='_blank'>OAuth 2.0 authorization framework</a> and supports <a href='https://developer.sumup.com/docs/authorization/#authorization-flows' target='_blank'>two authorization flows</a> for <a href='https://developer.sumup.com/docs/register-app/#3-create-oauth-client-credentials' target='_blank'>obtaining an access token</a>. 
+        The flow you choose will grant your access token specific permissions. All API calls should include the obtained access token in the `Authorization: Bearer <<valid_access_token>>` format. 
+        To complete successful requests, ensure you have requested the <a href='https://developer.sumup.com/docs/authorization/#authorization-scopes' target='_blank'>necessary scopes</a> for your authorization flow of choice.
+      flows:
+        authorizationCode:
+          authorizationUrl: 'https://api.sumup.com/authorize'
+          tokenUrl: 'https://api.sumup.com/token'
+          refreshUrl: 'https://api.sumup.com/token'
+          scopes:
+            payments: Make payments by creating and processing checkouts.
+            transactions.history: View transactions and transaction history.
+            user.profile_readonly: View user profile details.
+            user.profile: View and manage your user profile.
+            user.app-settings: View and manage the SumUp mobile application settings.
+            payment_instruments: Manage customers and their payment instruments.
+            user.payout-settings: View and manage your payout settings.
+            user.subaccounts: View and manage the user profile details of your employees.
+        clientCredentials:
+          tokenUrl: 'https://api.sumup.com/token'
+          scopes:
+            payments: Make payments by creating and processing checkouts.
+            transactions.history: View transactions and transaction history.
+            user.profile_readonly: View user profile details.
+            user.profile: View and manage your user profile.
+            user.app-settings: View and manage the SumUp mobile application settings.
+            payment_instruments: Manage customers and their payment instruments.
+            user.payout-settings: View and manage your payout settings.
+            user.subaccounts: View and manage the user profile details of your employee.    
+  schemas:
+    Error:
+      type: object
+    LegacyError:
+      type: object
+      required:
+        - error_code
+        - message
+      description: >
+        Success or failure of a request are indicated by conventional HTTP response codes.
+
+        In general:
+
+        - Codes in the `2XX` range indicate success.
+        - Codes in the `4XX` range indicate an error caused by the client (e.g. missing required parameters, invalid data, etc.).
+        - Codes in the `5XX` range indicate an error with the processing on SumUp's side.     
+      properties:
+        error_code:
+          type: string
+          description: Error identifier.
+          example: NOT_FOUND
+          enum:
+            - NOT_FOUND
+            - CHECKOUT_PROCESSED
+            - FORBIDDEN
+            - NOT_AUTHORIZED
+        message:
+          type: string
+          description: Additional human readable details about the error
+          example: Resource not found
