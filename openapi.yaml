@@ -1,0 +1,1189 @@
+openapi: 3.0.1
+info:
+  description: |
+    SumUp’s REST API operates with `application/json` HTTP requests and response. The request bodies are sent through resource-oriented URLs and use the standard HTTP response codes.
+
+    For testing our APIs, please <a href='https://cloud.crm.sumup.com/sumup-developers-contact-form'>contact us</a> for a test account. 
+
+    When you receive your test account you can create your <a href='https://developer.sumup.com/docs/register-app/#3-create-oauth-client-credentials' target='_blank'>client credentials</a> and process different requests with real payment instruments, without charging them.
+  title: SumUp REST API
+  version: 1.0.0
+servers:
+  - description: Production server
+    url: 'https://api.sumup.com/{version}'
+    variables:
+      version:
+        default: v0.1
+        description: Version of the API.
+        enum:
+          - v0.1
+          - v1.0
+paths:
+  /authorize:
+    get:
+      summary: Request authorization from users
+      description: |
+        Request authorization from users and grant your application access to resources associated with the user's account.
+      parameters:
+        - name: response_type
+          in: query
+          description: The type of the expected response. The value must be `code` to indicate that you expect to receive an authorization code.
+          schema:
+            type: string
+          example: code
+        - name: client_id
+          in: query
+          description: 'The client ID of your application that was generated when you <a href="https://developer.sumup.com/docs/register-app/" target="_blank">registered it</a>.'
+          schema:
+            type: string
+          example: fOcmczrYtYMJ7Li5GjMLLcUeC9dN
+        - name: redirect_uri
+          in: query
+          description: 'The URI to which the merchant user is redirected after authorizing your application to access their user''s account data and to which the authorization code is sent. The value must match exactly one of the <a href="https://developer.sumup.com/docs/register-app#3-create-oauth-client-credentials" target="_blank">registered URIs</a> for your application.'
+          schema:
+            type: string
+          example: 'https://sample-app.example.com/callback'
+        - name: scope
+          in: query
+          description: 'A space-separated list of scopes for which you request authorization. If you don''t specify any scopes in the request, your application will be granted authorization for the default scopes.'
+          schema:
+            type: string
+          example: payments
+        - name: state
+          in: query
+          description: 'A unique local state that can be used for correlating requests and responses and for preventing <a href="https://tools.ietf.org/html/rfc6749#section-10.12" targer="_blank">cross-site request forgery</a>.'
+          schema:
+            type: string
+          example: 2cFCsY36y95lFHk4
+      responses:
+        '200':
+          $ref: '#/components/responses/NoBodyResponse'
+      servers:
+        - url: 'https://api.sumup.com/'
+      tags:
+        - Authorization
+  /checkouts:
+    get:
+      summary: List checkouts
+      description: Lists created checkout resources according to the applied `checkout_reference`.
+      parameters:
+        - $ref: '#/components/parameters/CheckoutReference'
+      responses:
+        '200':
+          $ref: '#/components/responses/CheckoutList'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+      security:
+        - accessToken:
+            - payments
+      tags:
+        - Checkouts
+    post:
+      summary: Create a checkout
+      description: |
+        Creates a new payment checkout resource. The unique `checkout_reference` created by this request, is used for further manipulation of the checkout. 
+
+        For 3DS checkouts, add the `redirect_url` parameter to your request body schema.
+
+        Follow by processing a checkout to charge the provided payment instrument.
+      requestBody:
+        $ref: '#/components/requestBodies/CheckoutCreate'
+      responses:
+        '201':
+          $ref: '#/components/responses/Checkout'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              examples:
+                Missing_Parameter:
+                  description: A required parameter is missing.
+                  value:
+                    error_code: MISSING
+                    message: Validation error
+                    param: pay_to_email
+              schema:
+                $ref: '#/components/schemas/ErrorExtended'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              examples:
+                Forbidden:
+                  description: You do not have the required permission for making this request.
+                  value:
+                    error_code: FORBIDDEN
+                    error_message: checkout_payments_not_allowed
+                    status_code: 403
+              schema:
+                $ref: '#/components/schemas/ErrorForbidden'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              examples:
+                Existing_Checkout:
+                  description: A resource with the specified parameters already exists on the server.
+                  value:
+                    error_code: DUPLICATED_CHECKOUT
+                    message: Checkout with this checkout reference and pay to email already exists
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - accessToken:
+            - payments
+      tags:
+        - Checkouts
+  '/checkouts/{id}':
+    delete:
+      summary: Deactivate a checkout
+      description: Deactivates an identified checkout resource. If the checkout has already been processed it can not be deactivated.
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                DeletedCheckout:
+                  description: Response body for a successfully deactivated checkout
+                  value:
+                    amount: 2
+                    checkout_reference: f00a8f74-b05d-4605-bd73-2a901bae5802
+                    currency: EUR
+                    date: '2020-02-29T10:56:56+00:00'
+                    description: Deletion example
+                    id: 817340ce-f1d9-4609-b90a-6152f8ee267j
+                    merchant_code: MH4H92C7
+                    merchant_name: Sample Merchant
+                    pay_to_email: user@example.com
+                    purpose: CHECKOUT
+                    status: EXPIRED
+                    transactions: []
+                    valid_until: '2020-02-29T10:56:56+00:00'
+              schema:
+                description: Details of the deleted checkout.
+                type: object
+                properties:
+                  amount:
+                    description: Amount of the payment.
+                    type: number
+                    format: float
+                  checkout_reference:
+                    description: Unique ID of the payment checkout specified by the client application when creating the checkout resource.
+                    type: string
+                    maxLength: 90
+                  currency:
+                    $ref: '#/components/schemas/Currency'
+                  date:
+                    description: 'Date and time of the creation of the payment checkout. Response format expressed according to <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener">ISO8601</a> code.'
+                    type: string
+                    format: date-time
+                    example: '2020-02-29T10:56:56+00:00'
+                    readOnly: true
+                  description:
+                    description: 'Short description of the checkout visible in the SumUp dashboard. The description can contribute to reporting, allowing easier identification of a checkout.'
+                    type: string
+                  id:
+                    description: Unique ID of the checkout resource.
+                    type: string
+                    readOnly: true
+                  merchant_code:
+                    description: Unique identifying code of the merchant profile.
+                    type: string
+                  merchant_name:
+                    description: Merchant name
+                    type: string
+                  pay_to_email:
+                    description: Email address of the registered user (merchant) to whom the payment is made. It is highly recommended to use `merchant_code` instead of `pay_to_email`.
+                    type: string
+                    format: email
+                  purpose:
+                    description: Purpose of the checkout creation initially
+                    type: string
+                    enum:
+                      - SETUP_RECURRING_PAYMENT
+                      - CHECKOUT
+                  status:
+                    description: Currrent status of the checkout.
+                    type: string
+                    enum:
+                      - EXPIRED
+                    readOnly: true
+                  transactions:
+                    description: List of transactions related to the payment.
+                    type: array
+                    items:
+                      allOf:
+                        - $ref: '#/components/schemas/TransactionMixinBase'
+                        - $ref: '#/components/schemas/TransactionMixinCheckout'
+                    readOnly: true
+                    uniqueItems: true
+                  valid_until:
+                    description: 'Date and time of the checkout expiration before which the client application needs to send a processing request. If no value is present, the checkout does not have an expiration time.'
+                    type: string
+                    format: date-time
+                    example: '2020-02-29T10:56:56+00:00'
+                    nullable: true
+                    readOnly: true
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+        '409':
+          $ref: '#/components/responses/ErrorConflict'
+      security:
+        - accessToken:
+            - payments
+      tags:
+        - Checkouts
+    get:
+      summary: Retrieve a checkout
+      description: Retrieves an identified checkout resource. Use this request after processing a checkout to confirm its status and inform the end user respectively.
+      responses:
+        '200':
+          $ref: '#/components/responses/CheckoutRetrieve'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+      security:
+        - accessToken:
+            - payments
+      tags:
+        - Checkouts
+    parameters:
+      - $ref: '#/components/parameters/CheckoutID'
+    put:
+      summary: Process a checkout
+      description: |
+        Processing a checkout will attempt to charge the provided payment instrument for the amount of the specified checkout resource initiated in the `Create a checkout` endpoint.
+
+        Follow this request with `Retrieve a checkout` to confirm its status.
+      requestBody:
+        $ref: '#/components/requestBodies/CheckoutProcess'
+      responses:
+        '200':
+          $ref: '#/components/responses/CheckoutProcess'
+        '202':
+          $ref: '#/components/responses/CheckoutProcessAccepted'
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              examples:
+                Invalid_Parameter:
+                  description: A required parameter has an invalid value.
+                  value:
+                    error_code: INVALID
+                    message: Validation error
+                    param: card.expiry_year
+                Multiple_Invalid_Parameters:
+                  description: Multiple required parameters have invalid values.
+                  value:
+                    - error_code: INVALID
+                      message: Validation error
+                      param: card.name
+                    - error_code: INVALID
+                      message: Validation error
+                      param: card.number
+                    - error_code: INVALID
+                      message: Validation error
+                      param: card.expiry_year
+              schema:
+                oneOf:
+                  - $ref: '#/components/schemas/ErrorExtended'
+                  - description: List of error messages.
+                    items:
+                      $ref: '#/components/schemas/ErrorExtended'
+                    type: array
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+        '409':
+          $ref: '#/components/responses/ErrorConflict'
+      tags:
+        - Checkouts
+  /customers:
+    post:
+      summary: Create a customer
+      description: Creates a new saved customer resource which you can later manipulate and save payment instruments to.
+      requestBody:
+        $ref: '#/components/requestBodies/CustomerCreate'
+      responses:
+        '201':
+          $ref: '#/components/responses/Customer'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              examples:
+                Existing_Customer:
+                  description: A resource with the specified identifier already exists on the server.
+                  value:
+                    error_code: CUSTOMER_ALREADY_EXISTS
+                    message: Customer already exists
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - accessToken:
+            - payment_instruments
+      tags:
+        - Customers
+  '/customers/{customer_id}':
+    get:
+      summary: Retrieve a customer
+      description: 'Retrieves an identified saved customer resource through the unique `customer_id` parameter, generated upon customer creation.'
+      responses:
+        '200':
+          $ref: '#/components/responses/Customer'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+      security:
+        - accessToken:
+            - payment_instruments
+      tags:
+        - Customers
+    parameters:
+      - $ref: '#/components/parameters/CustomerID'
+    put:
+      summary: Update a customer
+      description: |
+        Updates an identified saved customer resource's personal details. 
+
+        The request only overwrites the parameters included in the request, all other parameters will remain with their initially assigned values.
+      requestBody:
+        $ref: '#/components/requestBodies/CustomerUpdate'
+      responses:
+        '200':
+          $ref: '#/components/responses/Customer'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+      security:
+        - accessToken:
+            - payment_instruments
+      tags:
+        - Customers
+  '/customers/{customer_id}/payment-instruments':
+    get:
+      summary: List payment instruments
+      description: Lists all payment instrument resources that are saved for an identified customer.
+      responses:
+        '200':
+          $ref: '#/components/responses/PaymentInstrumentList'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+      security:
+        - accessToken:
+            - payment_instruments
+      tags:
+        - Customers
+    parameters:
+      - $ref: '#/components/parameters/CustomerID'
+    post:
+      summary: Create a payment instrument
+      description: |
+        Creates and activates a new payment instrument resource by saving a payment card for an identified customer. Implement to improve customer experience by skipping the step of entering payment instrument details.
+
+        The token created via this endpoint <b>can not</b> be used for recurring payments by merchants operating within the EU. For more information visit our <a href="https://developer.sumup.com/docs/recurring-payments/" target="_blank">recurring payments guide</a>.
+      requestBody:
+        $ref: '#/components/requestBodies/PaymentInstrument'
+      responses:
+        '201':
+          $ref: '#/components/responses/PaymentInstrumentCreate'
+        '400':
+          $ref: '#/paths/~1checkouts~1%7Bid%7D/put/responses/400'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              examples:
+                Checkout_Processed:
+                  description: 'The maximum number of payment instruments per customer is reached. Currently, the maximum allowed number is 4.'
+                  value:
+                    error_code: MAX_INSTRUMENT_COUNT
+                    message: Max number of payment instruments on file reached
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - accessToken:
+            - payment_instruments
+      tags:
+        - Customers
+  '/customers/{customer_id}/payment-instruments/{token}':
+    delete:
+      summary: Deactivate a payment instrument
+      description: Deactivates an identified card payment instrument resource for a customer.
+      responses:
+        '204':
+          $ref: '#/components/responses/NoBodyResponse'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+      security:
+        - accessToken:
+            - payment_instruments
+      tags:
+        - Customers
+    parameters:
+      - $ref: '#/components/parameters/CustomerID'
+      - $ref: '#/components/parameters/Token'
+  /me:
+    get:
+      summary: Retrieve an account
+      description: Returns user account information.
+      parameters:
+        - $ref: '#/components/parameters/MerchantAccount'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MerchantAccount'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+      security:
+        - accessToken:
+            - user.profile
+            - user.profile_readonly
+      tags:
+        - Account Details
+  /me/accounts:
+    get:
+      summary: List subaccounts
+      parameters:
+        - $ref: '#/components/parameters/Subaccounts'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SubaccountsDetails'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+      security:
+        - accessToken:
+            - user.subaccounts
+      tags:
+        - Subaccounts
+    post:
+      summary: Create a subaccount
+      requestBody:
+        $ref: '#/components/requestBodies/SubaccountPayload'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subaccount'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+      security:
+        - accessToken:
+            - user.subaccounts
+      tags:
+        - Subaccounts
+  '/me/accounts/{operator_code}':
+    delete:
+      summary: Deactivate a subaccount
+      parameters:
+        - $ref: '#/components/parameters/Subaccount'
+      responses:
+        '200':
+          $ref: '#/paths/~1me~1accounts/post/responses/200'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+      security:
+        - accessToken:
+            - user.subaccounts
+      tags:
+        - Subaccounts
+    put:
+      summary: Update a subaccount
+      parameters:
+        - $ref: '#/components/parameters/Subaccount'
+      requestBody:
+        $ref: '#/components/requestBodies/SubaccountPayload'
+      responses:
+        '200':
+          $ref: '#/paths/~1me~1accounts/post/responses/200'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+      security:
+        - accessToken:
+            - user.subaccounts
+      tags:
+        - Subaccounts
+  /me/financials/payouts:
+    get:
+      summary: List payouts
+      description: Lists ordered payouts for the merchant account.
+      parameters:
+        - name: start_date
+          in: query
+          description: 'Start date (in <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener">ISO8601</a> format).'
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: 'End date (in <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener">ISO8601</a> format).'
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum:
+              - json
+              - csv
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum:
+              - desc
+              - asc
+      responses:
+        '200':
+          $ref: '#/components/responses/FinancialPayouts'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+      security:
+        - accessToken:
+            - user.profile
+            - user.profile_readonly
+      tags:
+        - Payouts
+  /me/financials/transactions:
+    get:
+      summary: List transactions
+      description: Lists a less detailed history of all transactions associated with the merchant account.
+      parameters:
+        - name: start_date
+          in: query
+          description: 'Start date (in <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener">ISO8601</a> format).'
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: end_date
+          in: query
+          description: 'End date (in <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener">ISO8601</a> format).'
+          required: true
+          schema:
+            type: string
+            format: date
+        - name: format
+          in: query
+          schema:
+            type: string
+            enum:
+              - json
+              - csv
+        - name: limit
+          in: query
+          schema:
+            type: integer
+        - name: order
+          in: query
+          schema:
+            type: string
+            enum:
+              - desc
+              - asc
+      responses:
+        '200':
+          $ref: '#/components/responses/MerchantAccount'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+      security:
+        - accessToken:
+            - user.profile
+            - user.profile_readonly
+      tags:
+        - Payouts
+  /me/merchant-profile:
+    get:
+      summary: Retrieve a profile
+      description: Retrieves merchant profile data.
+      responses:
+        '200':
+          $ref: '#/components/responses/MerchantProfile'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+      security:
+        - accessToken:
+            - user.profile
+            - user.profile_readonly
+      tags:
+        - Merchant Account
+  /me/merchant-profile/bank-accounts:
+    get:
+      summary: List bank accounts
+      description: Retrives bank accounts of the merchant.
+      parameters:
+        - $ref: '#/components/parameters/BankAccounts'
+      responses:
+        '200':
+          $ref: '#/components/responses/BankAccounts'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+      security:
+        - accessToken:
+            - user.payout-settings
+            - user.profile
+            - user.profile_readonly
+      tags:
+        - Merchant Account
+  /me/merchant-profile/doing-business-as:
+    get:
+      summary: Retrieve DBA
+      description: Retrieves Doing Business As profile.
+      responses:
+        '200':
+          $ref: '#/components/responses/DoingBusinessAs'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+      security:
+        - accessToken:
+            - user.profile
+            - user.profile_readonly
+      tags:
+        - Merchant Account
+  /me/merchant-profile/settings:
+    get:
+      summary: List settings
+      description: Retrieves merchant settings.
+      responses:
+        '200':
+          $ref: '#/components/responses/MerchantSettings'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '403':
+          $ref: '#/components/responses/ErrorForbidden'
+      security:
+        - accessToken:
+            - user.payout-settings
+      tags:
+        - Merchant Account
+  /me/personal-profile:
+    get:
+      summary: Retrieve a profile
+      description: Retrives personal profile data.
+      responses:
+        '200':
+          $ref: '#/components/responses/PersonalProfile'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+      security:
+        - accessToken:
+            - user.profile
+            - user.profile_readonly
+      tags:
+        - Personal Account
+  '/me/refund/{txn_id}':
+    parameters:
+      - $ref: '#/components/parameters/TxnID'
+    post:
+      summary: Refund a transaction
+      description: Refunds an identified transaction either in full or partially.
+      requestBody:
+        $ref: '#/components/requestBodies/Refund'
+      responses:
+        '204':
+          $ref: '#/components/responses/NoBodyResponse'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+        '409':
+          description: Conflict
+          content:
+            application/json:
+              examples:
+                Transaction_Not_Refundable:
+                  description: The state of the identified transaction resource does not permit the requested operation.
+                  value:
+                    error_code: CONFLICT
+                    message: The transaction is not refundable in its current state
+              schema:
+                $ref: '#/components/schemas/Error'
+      security:
+        - accessToken:
+            - payments
+      tags:
+        - Refunds
+  /me/transactions:
+    get:
+      summary: Retrieve a transaction
+      description: |
+        Retrieves the full details of an identified transaction. The transaction resource is identified by a query parameter and *one* of following parameters is required:
+         *  `id`
+         *  `internal_id`
+         *  `transaction_code`
+         *  `foreign_transaction_id`
+         *  `client_transaction_id`
+      parameters:
+        - $ref: '#/components/parameters/TransactionID'
+        - $ref: '#/components/parameters/TransactionInternalID'
+        - $ref: '#/components/parameters/TransactionCode'
+      responses:
+        '200':
+          $ref: '#/components/responses/Transaction'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+        '404':
+          $ref: '#/components/responses/ErrorNotFound'
+      security:
+        - accessToken:
+            - transactions.history
+      tags:
+        - Transactions
+  /me/transactions/history:
+    get:
+      summary: List transactions
+      description: Lists detailed history of all transactions associated with the merchant account.
+      parameters:
+        - $ref: '#/components/parameters/TransactionCode'
+        - $ref: '#/components/parameters/OrderFilter'
+        - $ref: '#/components/parameters/LimitFilter'
+        - $ref: '#/components/parameters/UsersFilter'
+        - $ref: '#/components/parameters/StatusesFilter'
+        - $ref: '#/components/parameters/PaymentTypesFilter'
+        - $ref: '#/components/parameters/TypesFilter'
+        - $ref: '#/components/parameters/ChangesSinceFilter'
+        - $ref: '#/components/parameters/NewestTimeFilter'
+        - $ref: '#/components/parameters/NewestRefFilter'
+        - $ref: '#/components/parameters/OldestTimeFilter'
+        - $ref: '#/components/parameters/OldestRefFilter'
+      responses:
+        '200':
+          $ref: '#/components/responses/Subaccounts'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+      security:
+        - accessToken:
+            - transactions.history
+      tags:
+        - Transactions
+  '/receipts/{id}':
+    get:
+      summary: Retrieve receipt details
+      description: Retrieves receipt specific data for a transaction.
+      parameters:
+        - name: id
+          in: path
+          description: 'SumUp unique transaction ID or transaction code, e.g. TS7HDYLSKD.'
+          required: true
+          schema:
+            type: string
+        - name: mid
+          in: query
+          description: Merchant code.
+          required: true
+          schema:
+            type: string
+        - name: tx_event_id
+          in: query
+          description: The ID of the transaction event (refund).
+          schema:
+            type: integer
+      responses:
+        '200':
+          $ref: '#/components/responses/Receipts'
+        '400':
+          $ref: '#/components/responses/ErrorNotFound'
+        '401':
+          $ref: '#/components/responses/ErrorNotAuthorized'
+      security:
+        - accessToken: []
+      servers:
+        - url: 'https://api.sumup.com/v1.0'
+      tags:
+        - Receipts
+  /token:
+    post:
+      summary: Generate a token
+      description: |
+        Generate a token or a refresh token
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthToken'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              examples:
+                access_token:
+                  description: Successfully created access token
+                  value:
+                    access_token: 565e2d19cef68203170ddadb952141326d14e03f4ccbd46daa079c26c910a864
+                    expires_in: 3600
+                    refresh_token: d180031bfe9bac36c336e5746637810272546865e9c9586012f462a56f3fe9af
+                    token_type: Bearer
+                refresh_token:
+                  description: Successfully created access token with the refresh token
+                  value:
+                    access_token: ec410d10ad7f06d3c2598473c9cd61189abcc016900a9938068542bcf9754073
+                    expires_in: 3600
+                    refresh_token: d180031bfe9bac36c336e5746637810272546865e9c9586012f462a56f3fe9af
+                    scope: payments user.app-settings transactions.history user.profile_readonly
+                    token_type: Bearer
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    description: The access token that you need to use in your requests to the SumUp API.
+                    type: string
+                    example: ec410d10ad7f06d3c2598473c9cd61189abcc016900a9938068542bcf9754073
+                  expires_in:
+                    description: The validity of the access token in seconds.
+                    type: integer
+                    example: 3600
+                  refresh_token:
+                    description: The refresh token provided in the request call
+                    type: string
+                    example: d180031bfe9bac36c336e5746637810272546865e9c9586012f462a56f3fe9af
+                  scope:
+                    description: List of authorization scopes granted to your access token.
+                    type: string
+                    example: payments user.app-settings transactions.history user.profile_readonly
+                  tokent_type:
+                    description: The type of the token. The value is always `Bearer`.
+                    type: string
+                    example: Bearer
+        '400':
+          description: Bad Request
+          content:
+            application/json:
+              examples:
+                Invalid_Parameter:
+                  description: A parameter is invalid or expired.
+                  value:
+                    error: invalid_grant
+                    error_description: code parameter invalid or expired
+                Missing_Parameter:
+                  description: A parameter is missing in the request.
+                  value:
+                    error: invalid_request
+                    error_description: code parameter is missing
+              schema:
+                $ref: '#/components/schemas/Error'
+      servers:
+        - url: 'https://api.sumup.com/'
+      tags:
+        - Authorization
+components:
+  requestBodies:
+    BankAccounts:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/BankAccountPayload'
+    CheckoutCreate:
+      content:
+        application/json:
+          examples:
+            Checkout:
+              description: Standard request body for creating a checkout
+              value:
+                amount: 10.1
+                checkout_reference: f00a8f74-b05d-4605-bd73-2a901bae5802
+                currency: EUR
+                date: '2020-02-29T10:56:56+00:00'
+                description: Purchase
+                id: 2b79757a-de87-4a2e-90e4-b17c947c730d
+                merchant_code: MDUDGLR9
+                merchant_name: John Doe LTD
+                pay_to_email: user@example.com
+                redirect_url: 'https://sumup.com'
+                status: PAID
+            Checkout3DS:
+              description: Create a 3DS checkout
+              value:
+                amount: 10.1
+                checkout_reference: f00a8f74-b05d-4605-bd73-2a901bae5802
+                currency: EUR
+                customer_id: 831ff8d4cd5958ab5670
+                description: Purchase
+                merchant_code: MH4H92C7
+                pay_to_email: user@example.com
+                redirect_url: 'https://mysite.com/completed_purchase'
+                return_url: 'http://example.com/'
+            CheckoutAPM:
+              description: Create an Alternative Payment Method checkout
+              value:
+                amount: 10.1
+                checkout_reference: f00a8f74-b05d-4605-bd73-2a901bae5802
+                currency: EUR
+                merchant_code: MH4H92C7
+                redirect_url: 'https://mysite.com/completed_purchase'
+          schema:
+            $ref: '#/components/schemas/CheckoutCreateRequest'
+    CheckoutProcess:
+      content:
+        application/json:
+          examples:
+            ProcessBancontact:
+              description: Process a checkout with Bancontact
+              value:
+                payment_type: bancontact
+                personal_details:
+                  address:
+                    country: BE
+                  email: user@example.com
+                  first_name: John
+                  last_name: Doe
+            ProcessBoleto:
+              description: Process a checkout with Boleto
+              value:
+                payment_type: boleto
+                personal_details:
+                  address:
+                    city: São Paulo
+                    country: BR
+                    line1: 'Rua Gilberto Sabino, 215'
+                    postal_code: 05425-020
+                    state: SP
+                  email: user@example.com
+                  first_name: John
+                  last_name: Doe
+                  tax_id: 423.378.593-47
+            ProcessCard:
+              description: Process a checkout with a card
+              value:
+                card:
+                  cvv: '123'
+                  expiry_month: '01'
+                  expiry_year: '2023'
+                  name: John Doe
+                  number: '1234567890123456'
+                  zip_code: '12345'
+                installments: 1
+                mandate:
+                  type: recurrent
+                  user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.104 Safari/537.36'
+                  user_ip: 172.217.169.174
+                payment_type: card
+            ProcessSofort:
+              description: Process a checkout with Sofort
+              value:
+                payment_type: sofort
+                personal_details:
+                  address:
+                    country: DE
+                  email: user@example.com
+                  first_name: John
+                  last_name: Doe
+            ProcessToken:
+              description: Process a checkout with a token
+              value:
+                customer_id: MEDKHDTI
+                installments: 1
+                payment_type: card
+                token: ba85dfee-c3cf-48a6-84f5-d7d761fbba50
+            ProcessiDeal:
+              description: Process a checkout with iDeal
+              value:
+                payment_type: ideal
+                personal_details:
+                  address:
+                    country: NL
+                  email: user@example.com
+                  first_name: John
+                  last_name: Doe
+          schema:
+            $ref: '#/components/schemas/CheckoutProcessMixin'
+      description: Details of the payment instrument for processing the checkout.
+    CustomerCreate:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Customer'
+      description: Details of the customer.
+    CustomerUpdate:
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              personal_details:
+                $ref: '#/components/schemas/PersonalDetails'
+    DoingBusinessAs:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/DoingBusinessAsPayload'
+    MerchantProfile:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MerchantProfilePayload'
+    MerchantSettings:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/MerchantSettingsPayload'
+    PaymentInstrument:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PaymentInstrumentCard'
+    PersonalProfile:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/PersonalProfilePayload'
+    Refund:
+      content:
+        application/json:
+          schema:
+            description: Optional amount for partial refunds of transactions.
+            type: object
+            properties:
+              amount:
+                description: 'Amount to be refunded. Eligible amount can''t exceed the amount of the transaction and varies based on country and currency. If you do not specify a value, the system performs a full refund of the transaction.'
+                type: number
+                format: float
+    SubaccountPayload:
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/SubaccountPayload'
+  securitySchemes:
+    accessToken:
+      description: |
+        At SumUp authentication uses your API credentials and Basic HTTP auth. The API credentials consist of a `client_id` and `client_secret` key-value pair.
+
+        It is possible to create multiple API credentials for each of the applications you connect with your SumUp account.
+
+        Use the API credentials as an authorization header for requests that require such.
+
+        Authorization
+        ---------
+
+        SumUp uses the <a href='https://tools.ietf.org/html/rfc6749' target='_blank'>OAuth 2.0 authorization framework</a> and supports <a href='https://developer.sumup.com/docs/authorization/#authorization-flows' target='_blank'>two authorization flows</a> for <a href='https://developer.sumup.com/docs/register-app/#3-create-oauth-client-credentials' target='_blank'>obtaining an access token</a>. 
+
+        The flow you choose will grant your access token specific permissions. All API calls should include the obtained access token in the `Authorization: Bearer <<valid_access_token>>` format. 
+
+        To complete successful requests, ensure you have requested the <a href='https://developer.sumup.com/docs/authorization/#authorization-scopes' target='_blank'>necessary scopes</a> for your authorization flow of choice.
+      flows:
+        authorizationCode:
+          authorizationUrl: 'https://api.sumup.com/authorize'
+          refreshUrl: 'https://api.sumup.com/token'
+          scopes:
+            payment_instruments: Manage customers and their payment instruments.
+            payments: Make payments by creating and processing checkouts.
+            transactions.history: View transactions and transaction history.
+            user.app-settings: View and manage the SumUp mobile application settings.
+            user.payout-settings: View and manage your payout settings.
+            user.profile: View and manage your user profile.
+            user.profile_readonly: View user profile details.
+            user.subaccounts: View and manage the user profile details of your employees.
+          tokenUrl: 'https://api.sumup.com/token'
+        clientCredentials:
+          scopes:
+            payment_instruments: Manage customers and their payment instruments.
+            payments: Make payments by creating and processing checkouts.
+            transactions.history: View transactions and transaction history.
+            user.app-settings: View and manage the SumUp mobile application settings.
+            user.payout-settings: View and manage your payout settings.
+            user.profile: View and manage your user profile.
+            user.profile_readonly: View user profile details.
+            user.subaccounts: View and manage the user profile details of your employee.
+          tokenUrl: 'https://api.sumup.com/token'
+      type: oauth2
+tags:
+  - description: |
+      Retrieve access tokens to grant your application access to specific resources or generate refresh tokens for expired access tokens.
+    name: Authorization
+  - description: |
+      Accept payments from your end users by adding the Checkouts model to your platform. 
+      SumUp supports standard and single payment 3DS checkout flows. 
+
+      The Checkout model allows creating, listing, retrieving, processing and deactivating checkouts. 
+      A payment is completed by creating a checkout and then processing the checkout.
+    name: Checkouts
+  - description: |
+      Allow your regular customers to save their information with the Customers model. 
+      This will prevent re-entering payment instrument information for recurring payments on your platform. 
+
+      Depending on the needs you can allow, creating, listing or deactivating payment instruments & creating, retrieving and updating customers.
+    name: Customers
+  - description: |
+      Retrieve details for a specific transaction by it’s `id` 
+      or any other required query parameter, or list all transactions related to the merchant account.
+    name: Transactions
+  - description: |
+      The Payouts model will allow you to track funds you’ve received from SumUp. 
+      You can receive a detailed payouts list with information like dates, fees, references and statuses, using the `List payouts` endpoint. 
+
+      For a less detailed payouts list use `List transactions`.'
+    name: Payouts
+  - description: The Refunds model allows you to process a refund by identifying it with its unique transaction id.
+    name: Refunds
+  - description: The Receipts model obtains receipt-like details for specific transactions.
+    name: Receipts
+  - description: Account Details.
+    name: Account Details
+  - description: Personal Account.
+    name: Personal Account
+  - description: Manage merchant account.
+    name: Merchant Account
+  - description: Manage subaccounts.
+    name: Subaccounts
