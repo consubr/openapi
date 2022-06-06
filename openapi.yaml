@@ -1140,6 +1140,8 @@ components:
     APIKey:
       bearerFormat: opaque
       description: |
+        # API keys
+
         Easiest way to authenticate your API requests is by using your account's API keys.
         API keys are passed in the `Authorization` header and give you access to all SumUp all of API.
         You can create API keys from the [API Keys](https://developer.sumup.com/protected/api-keys/) page
@@ -1148,6 +1150,7 @@ components:
       type: http
     OAuth:
       description: |
+        # OAuth 2
 
         OAuth 2 enables you to authorize on behalf of other users once they give you permission to do so.
 
@@ -1155,14 +1158,18 @@ components:
         Client credentials consist of a `client_id` and `client_secret` key-value pair.
         It is possible to create multiple API credentials for each of the applications you connect with your SumUp account.
 
-        Authorization
-        ---------
+        ## Authorization
 
         SumUp uses the [OAuth 2.0 authorization framework](https://tools.ietf.org/html/rfc6749) and supports [two authorization flows](https://developer.sumup.com/docs/online-payments/introduction/authorization/#authorization-code-flow) for [obtaining an access token](https://developer.sumup.com/docs/online-payments/introduction/register-app/). 
 
         The flow you choose will grant your access token specific permissions. All API calls should include the obtained access token in the `Authorization: Bearer <<valid_access_token>>` format. 
 
         To complete successful requests, ensure you have requested the [necessary scopes](https://developer.sumup.com/docs/online-payments/introduction/authorization/#authorization-scopes) for your authorization flow of choice.
+
+        > :warning: By default, refresh tokens are valid for a period of 6 months. After your refresh_token expires,
+        > you need to go through all steps in the Authorization code flow again to obtain a valid access token and a new refresh
+        > token. A new refresh token will also be issued when a valid token is used within 30 days prior to the expiration of the
+        > valid token. The new token will be valid for another 6 months.
       flows:
         authorizationCode:
           authorizationUrl: 'https://api.sumup.com/authorize'
