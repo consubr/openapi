@@ -1,7 +1,7 @@
 {
   "openapi": "3.0.1",
   "info": {
-    "description": "SumUp’s REST API operates with `application/json` HTTP requests and response. The request bodies are sent through resource-oriented URLs and use the standard HTTP response codes.\n\nFor testing our APIs, please <a href='https://cloud.crm.sumup.com/sumup-developers-contact-form'>contact us</a> for a test account. \n\nWhen you receive your test account you can create your <a href='https://developer.sumup.com/docs/register-app/#3-create-oauth-client-credentials' target='_blank'>client credentials</a> and process different requests with real payment instruments, without charging them.\n",
+    "description": "SumUp’s REST API operates with `application/json` HTTP requests and response. The request bodies are sent through resource-oriented URLs and use the standard HTTP response codes.\n\nFor testing our APIs, please [contact us](https://developer.sumup.com/contact) for a test account. \n\nWhen you receive your test account you can create your [client credentials](https://developer.sumup.com/docs/online-payments/introduction/register-app/#3-create-oauth-client-credentials) and process different requests with real payment instruments, without charging them.\n",
     "title": "SumUp REST API",
     "version": "1.0.0"
   },
@@ -31,6 +31,7 @@
             "name": "response_type",
             "in": "query",
             "description": "The type of the expected response. The value must be `code` to indicate that you expect to receive an authorization code.",
+            "required": true,
             "schema": {
               "type": "string"
             },
@@ -39,7 +40,7 @@
           {
             "name": "client_id",
             "in": "query",
-            "description": "The client ID of your application that was generated when you <a href=\"https://developer.sumup.com/docs/register-app/\" target=\"_blank\">registered it</a>.",
+            "description": "The client ID of your application that was generated when you [registered it](https://developer.sumup.com/docs/online-payments/introduction/register-app/#3-create-oauth-client-credentials: true\n",
             "schema": {
               "type": "string"
             },
@@ -48,7 +49,8 @@
           {
             "name": "redirect_uri",
             "in": "query",
-            "description": "The URI to which the merchant user is redirected after authorizing your application to access their user's account data and to which the authorization code is sent. The value must match exactly one of the <a href=\"https://developer.sumup.com/docs/register-app#3-create-oauth-client-credentials\" target=\"_blank\">registered URIs</a> for your application.",
+            "description": "The URI to which the merchant user is redirected after authorizing your application to access their user's account data and to which the authorization code is sent. The value must match exactly one of the [registered URIs](https://developer.sumup.com/docs/online-payments/introduction/register-app/#3-create-oauth-client-credentials) for your application.",
+            "required": true,
             "schema": {
               "type": "string"
             },
@@ -58,6 +60,7 @@
             "name": "scope",
             "in": "query",
             "description": "A space-separated list of scopes for which you request authorization. If you don't specify any scopes in the request, your application will be granted authorization for the default scopes.",
+            "required": true,
             "schema": {
               "type": "string"
             },
@@ -66,7 +69,8 @@
           {
             "name": "state",
             "in": "query",
-            "description": "A unique local state that can be used for correlating requests and responses and for preventing <a href=\"https://tools.ietf.org/html/rfc6749#section-10.12\" targer=\"_blank\">cross-site request forgery</a>.",
+            "description": "A unique local state that can be used for correlating requests and responses and for preventing [cross-site request forgery](https://tools.ietf.org/html/rfc6749#section-10.12).",
+            "required": true,
             "schema": {
               "type": "string"
             },
@@ -107,7 +111,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "payments"
             ]
           }
@@ -191,7 +198,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "ApiKey": []
+          },
+          {
+            "OAuth": [
               "payments"
             ]
           }
@@ -248,7 +258,7 @@
                       "$ref": "#/components/schemas/Currency"
                     },
                     "date": {
-                      "description": "Date and time of the creation of the payment checkout. Response format expressed according to <a href=\"https://en.wikipedia.org/wiki/ISO_8601\" target=\"_blank\" rel=\"noopener\">ISO8601</a> code.",
+                      "description": "Date and time of the creation of the payment checkout. Response format expressed according to [ISO8601](https://en.wikipedia.org/wiki/ISO_8601) code.",
                       "type": "string",
                       "format": "date-time",
                       "example": "2020-02-29T10:56:56+00:00",
@@ -333,7 +343,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "payments"
             ]
           }
@@ -358,7 +371,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "payments"
             ]
           }
@@ -490,7 +506,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "payment_instruments"
             ]
           }
@@ -520,7 +539,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "payment_instruments"
             ]
           }
@@ -556,7 +578,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "payment_instruments"
             ]
           }
@@ -586,7 +611,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "payment_instruments"
             ]
           }
@@ -602,7 +630,7 @@
       ],
       "post": {
         "summary": "Create a payment instrument",
-        "description": "Creates and activates a new payment instrument resource by saving a payment card for an identified customer. Implement to improve customer experience by skipping the step of entering payment instrument details.\n\nThe token created via this endpoint <b>can not</b> be used for recurring payments by merchants operating within the EU. For more information visit our <a href=\"https://developer.sumup.com/docs/recurring-payments/\" target=\"_blank\">recurring payments guide</a>.\n",
+        "description": "Creates and activates a new payment instrument resource by saving a payment card for an identified customer. Implement to improve customer experience by skipping the step of entering payment instrument details.\n\nThe token created via this endpoint *can not* be used for recurring payments by merchants operating within the EU. For more information visit our [recurring payments guide](https://developer.sumup.com/docs/online-payments/guides/recurring-payments/).\n",
         "requestBody": {
           "$ref": "#/components/requestBodies/PaymentInstrument"
         },
@@ -644,7 +672,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "payment_instruments"
             ]
           }
@@ -674,7 +705,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "payment_instruments"
             ]
           }
@@ -718,7 +752,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.profile",
               "user.profile_readonly"
             ]
@@ -757,7 +794,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.subaccounts"
             ]
           }
@@ -791,7 +831,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.subaccounts"
             ]
           }
@@ -825,7 +868,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.subaccounts"
             ]
           }
@@ -860,7 +906,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.subaccounts"
             ]
           }
@@ -878,7 +927,7 @@
           {
             "name": "start_date",
             "in": "query",
-            "description": "Start date (in <a href=\"https://en.wikipedia.org/wiki/ISO_8601\" target=\"_blank\" rel=\"noopener\">ISO8601</a> format).",
+            "description": "Start date (in [ISO8601](https://en.wikipedia.org/wiki/ISO_8601) format).",
             "required": true,
             "schema": {
               "type": "string",
@@ -888,7 +937,7 @@
           {
             "name": "end_date",
             "in": "query",
-            "description": "End date (in <a href=\"https://en.wikipedia.org/wiki/ISO_8601\" target=\"_blank\" rel=\"noopener\">ISO8601</a> format).",
+            "description": "End date (in [ISO8601](https://en.wikipedia.org/wiki/ISO_8601) format).",
             "required": true,
             "schema": {
               "type": "string",
@@ -935,7 +984,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.profile",
               "user.profile_readonly"
             ]
@@ -954,7 +1006,7 @@
           {
             "name": "start_date",
             "in": "query",
-            "description": "Start date (in <a href=\"https://en.wikipedia.org/wiki/ISO_8601\" target=\"_blank\" rel=\"noopener\">ISO8601</a> format).",
+            "description": "Start date (in [ISO8601](https://en.wikipedia.org/wiki/ISO_8601) format).",
             "required": true,
             "schema": {
               "type": "string",
@@ -964,7 +1016,7 @@
           {
             "name": "end_date",
             "in": "query",
-            "description": "End date (in <a href=\"https://en.wikipedia.org/wiki/ISO_8601\" target=\"_blank\" rel=\"noopener\">ISO8601</a> format).",
+            "description": "End date (in [ISO8601](https://en.wikipedia.org/wiki/ISO_8601) format).",
             "required": true,
             "schema": {
               "type": "string",
@@ -1011,7 +1063,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.profile",
               "user.profile_readonly"
             ]
@@ -1039,7 +1094,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.profile",
               "user.profile_readonly"
             ]
@@ -1072,7 +1130,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.payout-settings",
               "user.profile",
               "user.profile_readonly"
@@ -1098,7 +1159,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.profile",
               "user.profile_readonly"
             ]
@@ -1126,7 +1190,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.payout-settings"
             ]
           }
@@ -1150,7 +1217,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "user.profile",
               "user.profile_readonly"
             ]
@@ -1202,7 +1272,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "payments"
             ]
           }
@@ -1240,7 +1313,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "transactions.history"
             ]
           }
@@ -1302,7 +1378,10 @@
         },
         "security": [
           {
-            "accessToken": [
+            "APIKey": []
+          },
+          {
+            "OAuth": [
               "transactions.history"
             ]
           }
@@ -1357,7 +1436,10 @@
         },
         "security": [
           {
-            "accessToken": []
+            "APIKey": []
+          },
+          {
+            "OAuth": []
           }
         ],
         "servers": [
@@ -1741,8 +1823,14 @@
       }
     },
     "securitySchemes": {
-      "accessToken": {
-        "description": "At SumUp authentication uses your API credentials and Basic HTTP auth. The API credentials consist of a `client_id` and `client_secret` key-value pair.\n\nIt is possible to create multiple API credentials for each of the applications you connect with your SumUp account.\n\nUse the API credentials as an authorization header for requests that require such.\n\nAuthorization\n---------\n\nSumUp uses the <a href='https://tools.ietf.org/html/rfc6749' target='_blank'>OAuth 2.0 authorization framework</a> and supports <a href='https://developer.sumup.com/docs/authorization/#authorization-flows' target='_blank'>two authorization flows</a> for <a href='https://developer.sumup.com/docs/register-app/#3-create-oauth-client-credentials' target='_blank'>obtaining an access token</a>. \n\nThe flow you choose will grant your access token specific permissions. All API calls should include the obtained access token in the `Authorization: Bearer <<valid_access_token>>` format. \n\nTo complete successful requests, ensure you have requested the <a href='https://developer.sumup.com/docs/authorization/#authorization-scopes' target='_blank'>necessary scopes</a> for your authorization flow of choice.\n",
+      "APIKey": {
+        "bearerFormat": "opaque",
+        "description": "Easiest way to authenticate your API requests is by using your account's API keys.\nAPI keys are passed in the `Authorization` header and give you access to all SumUp all of API.\nYou can create API keys from the [API Keys](https://developer.sumup.com/protected/api-keys/) page\nof the [Developer portal](https://developer.sumup.com).\n",
+        "scheme": "bearer",
+        "type": "http"
+      },
+      "OAuth": {
+        "description": "\nOAuth 2 enables you to authorize on behalf of other users once they give you permission to do so.\n\nBefore you can start using the OAuth 2.0 flow for authorization you need to [generate client credentials](https://developer.sumup.com/protected/oauth-apps/).\nClient credentials consist of a `client_id` and `client_secret` key-value pair.\nIt is possible to create multiple API credentials for each of the applications you connect with your SumUp account.\n\nAuthorization\n---------\n\nSumUp uses the [OAuth 2.0 authorization framework](https://tools.ietf.org/html/rfc6749) and supports [two authorization flows](https://developer.sumup.com/docs/online-payments/introduction/authorization/#authorization-code-flow) for [obtaining an access token](https://developer.sumup.com/docs/online-payments/introduction/register-app/). \n\nThe flow you choose will grant your access token specific permissions. All API calls should include the obtained access token in the `Authorization: Bearer <<valid_access_token>>` format. \n\nTo complete successful requests, ensure you have requested the [necessary scopes](https://developer.sumup.com/docs/online-payments/introduction/authorization/#authorization-scopes) for your authorization flow of choice.\n",
         "flows": {
           "authorizationCode": {
             "authorizationUrl": "https://api.sumup.com/authorize",

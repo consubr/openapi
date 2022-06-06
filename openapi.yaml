@@ -3,9 +3,9 @@ info:
   description: |
     SumUp’s REST API operates with `application/json` HTTP requests and response. The request bodies are sent through resource-oriented URLs and use the standard HTTP response codes.
 
-    For testing our APIs, please <a href='https://cloud.crm.sumup.com/sumup-developers-contact-form'>contact us</a> for a test account. 
+    For testing our APIs, please [contact us](https://developer.sumup.com/contact) for a test account. 
 
-    When you receive your test account you can create your <a href='https://developer.sumup.com/docs/register-app/#3-create-oauth-client-credentials' target='_blank'>client credentials</a> and process different requests with real payment instruments, without charging them.
+    When you receive your test account you can create your [client credentials](https://developer.sumup.com/docs/online-payments/introduction/register-app/#3-create-oauth-client-credentials) and process different requests with real payment instruments, without charging them.
   title: SumUp REST API
   version: 1.0.0
 servers:
@@ -28,30 +28,35 @@ paths:
         - name: response_type
           in: query
           description: The type of the expected response. The value must be `code` to indicate that you expect to receive an authorization code.
+          required: true
           schema:
             type: string
           example: code
         - name: client_id
           in: query
-          description: 'The client ID of your application that was generated when you <a href="https://developer.sumup.com/docs/register-app/" target="_blank">registered it</a>.'
+          description: |
+            The client ID of your application that was generated when you [registered it](https://developer.sumup.com/docs/online-payments/introduction/register-app/#3-create-oauth-client-credentials: true
           schema:
             type: string
           example: fOcmczrYtYMJ7Li5GjMLLcUeC9dN
         - name: redirect_uri
           in: query
-          description: 'The URI to which the merchant user is redirected after authorizing your application to access their user''s account data and to which the authorization code is sent. The value must match exactly one of the <a href="https://developer.sumup.com/docs/register-app#3-create-oauth-client-credentials" target="_blank">registered URIs</a> for your application.'
+          description: 'The URI to which the merchant user is redirected after authorizing your application to access their user''s account data and to which the authorization code is sent. The value must match exactly one of the [registered URIs](https://developer.sumup.com/docs/online-payments/introduction/register-app/#3-create-oauth-client-credentials) for your application.'
+          required: true
           schema:
             type: string
           example: 'https://sample-app.example.com/callback'
         - name: scope
           in: query
           description: 'A space-separated list of scopes for which you request authorization. If you don''t specify any scopes in the request, your application will be granted authorization for the default scopes.'
+          required: true
           schema:
             type: string
           example: payments
         - name: state
           in: query
-          description: 'A unique local state that can be used for correlating requests and responses and for preventing <a href="https://tools.ietf.org/html/rfc6749#section-10.12" targer="_blank">cross-site request forgery</a>.'
+          description: 'A unique local state that can be used for correlating requests and responses and for preventing [cross-site request forgery](https://tools.ietf.org/html/rfc6749#section-10.12).'
+          required: true
           schema:
             type: string
           example: 2cFCsY36y95lFHk4
@@ -74,7 +79,8 @@ paths:
         '401':
           $ref: '#/components/responses/ErrorNotAuthorized'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - payments
       tags:
         - Checkouts
@@ -132,7 +138,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       security:
-        - accessToken:
+        - ApiKey: []
+        - OAuth:
             - payments
       tags:
         - Checkouts
@@ -177,7 +184,7 @@ paths:
                   currency:
                     $ref: '#/components/schemas/Currency'
                   date:
-                    description: 'Date and time of the creation of the payment checkout. Response format expressed according to <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener">ISO8601</a> code.'
+                    description: 'Date and time of the creation of the payment checkout. Response format expressed according to [ISO8601](https://en.wikipedia.org/wiki/ISO_8601) code.'
                     type: string
                     format: date-time
                     example: '2020-02-29T10:56:56+00:00'
@@ -234,7 +241,8 @@ paths:
         '409':
           $ref: '#/components/responses/ErrorConflict'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - payments
       tags:
         - Checkouts
@@ -249,7 +257,8 @@ paths:
         '404':
           $ref: '#/components/responses/ErrorNotFound'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - payments
       tags:
         - Checkouts
@@ -332,7 +341,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - payment_instruments
       tags:
         - Customers
@@ -350,7 +360,8 @@ paths:
         '404':
           $ref: '#/components/responses/ErrorNotFound'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - payment_instruments
       tags:
         - Customers
@@ -374,7 +385,8 @@ paths:
         '404':
           $ref: '#/components/responses/ErrorNotFound'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - payment_instruments
       tags:
         - Customers
@@ -392,7 +404,8 @@ paths:
         '404':
           $ref: '#/components/responses/ErrorNotFound'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - payment_instruments
       tags:
         - Customers
@@ -403,7 +416,7 @@ paths:
       description: |
         Creates and activates a new payment instrument resource by saving a payment card for an identified customer. Implement to improve customer experience by skipping the step of entering payment instrument details.
 
-        The token created via this endpoint <b>can not</b> be used for recurring payments by merchants operating within the EU. For more information visit our <a href="https://developer.sumup.com/docs/recurring-payments/" target="_blank">recurring payments guide</a>.
+        The token created via this endpoint *can not* be used for recurring payments by merchants operating within the EU. For more information visit our [recurring payments guide](https://developer.sumup.com/docs/online-payments/guides/recurring-payments/).
       requestBody:
         $ref: '#/components/requestBodies/PaymentInstrument'
       responses:
@@ -430,7 +443,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - payment_instruments
       tags:
         - Customers
@@ -448,7 +462,8 @@ paths:
         '404':
           $ref: '#/components/responses/ErrorNotFound'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - payment_instruments
       tags:
         - Customers
@@ -471,7 +486,8 @@ paths:
         '401':
           $ref: '#/components/responses/ErrorNotAuthorized'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.profile
             - user.profile_readonly
       tags:
@@ -493,7 +509,8 @@ paths:
         '403':
           $ref: '#/components/responses/ErrorForbidden'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.subaccounts
       tags:
         - Subaccounts
@@ -513,7 +530,8 @@ paths:
         '403':
           $ref: '#/components/responses/ErrorForbidden'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.subaccounts
       tags:
         - Subaccounts
@@ -532,7 +550,8 @@ paths:
         '404':
           $ref: '#/components/responses/ErrorNotFound'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.subaccounts
       tags:
         - Subaccounts
@@ -552,7 +571,8 @@ paths:
         '404':
           $ref: '#/components/responses/ErrorNotFound'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.subaccounts
       tags:
         - Subaccounts
@@ -563,14 +583,14 @@ paths:
       parameters:
         - name: start_date
           in: query
-          description: 'Start date (in <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener">ISO8601</a> format).'
+          description: 'Start date (in [ISO8601](https://en.wikipedia.org/wiki/ISO_8601) format).'
           required: true
           schema:
             type: string
             format: date
         - name: end_date
           in: query
-          description: 'End date (in <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener">ISO8601</a> format).'
+          description: 'End date (in [ISO8601](https://en.wikipedia.org/wiki/ISO_8601) format).'
           required: true
           schema:
             type: string
@@ -599,7 +619,8 @@ paths:
         '401':
           $ref: '#/components/responses/ErrorNotAuthorized'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.profile
             - user.profile_readonly
       tags:
@@ -611,14 +632,14 @@ paths:
       parameters:
         - name: start_date
           in: query
-          description: 'Start date (in <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener">ISO8601</a> format).'
+          description: 'Start date (in [ISO8601](https://en.wikipedia.org/wiki/ISO_8601) format).'
           required: true
           schema:
             type: string
             format: date
         - name: end_date
           in: query
-          description: 'End date (in <a href="https://en.wikipedia.org/wiki/ISO_8601" target="_blank" rel="noopener">ISO8601</a> format).'
+          description: 'End date (in [ISO8601](https://en.wikipedia.org/wiki/ISO_8601) format).'
           required: true
           schema:
             type: string
@@ -647,7 +668,8 @@ paths:
         '401':
           $ref: '#/components/responses/ErrorNotAuthorized'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.profile
             - user.profile_readonly
       tags:
@@ -664,7 +686,8 @@ paths:
         '403':
           $ref: '#/components/responses/ErrorForbidden'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.profile
             - user.profile_readonly
       tags:
@@ -683,7 +706,8 @@ paths:
         '403':
           $ref: '#/components/responses/ErrorForbidden'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.payout-settings
             - user.profile
             - user.profile_readonly
@@ -699,7 +723,8 @@ paths:
         '401':
           $ref: '#/components/responses/ErrorNotAuthorized'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.profile
             - user.profile_readonly
       tags:
@@ -716,7 +741,8 @@ paths:
         '403':
           $ref: '#/components/responses/ErrorForbidden'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.payout-settings
       tags:
         - Merchant Account
@@ -730,7 +756,8 @@ paths:
         '401':
           $ref: '#/components/responses/ErrorNotAuthorized'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - user.profile
             - user.profile_readonly
       tags:
@@ -761,7 +788,8 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - payments
       tags:
         - Refunds
@@ -787,7 +815,8 @@ paths:
         '404':
           $ref: '#/components/responses/ErrorNotFound'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - transactions.history
       tags:
         - Transactions
@@ -814,7 +843,8 @@ paths:
         '401':
           $ref: '#/components/responses/ErrorNotAuthorized'
       security:
-        - accessToken:
+        - APIKey: []
+        - OAuth:
             - transactions.history
       tags:
         - Transactions
@@ -848,7 +878,8 @@ paths:
         '401':
           $ref: '#/components/responses/ErrorNotAuthorized'
       security:
-        - accessToken: []
+        - APIKey: []
+        - OAuth: []
       servers:
         - url: 'https://api.sumup.com/v1.0'
       tags:
@@ -1106,22 +1137,32 @@ components:
           schema:
             $ref: '#/components/schemas/SubaccountPayload'
   securitySchemes:
-    accessToken:
+    APIKey:
+      bearerFormat: opaque
       description: |
-        At SumUp authentication uses your API credentials and Basic HTTP auth. The API credentials consist of a `client_id` and `client_secret` key-value pair.
+        Easiest way to authenticate your API requests is by using your account's API keys.
+        API keys are passed in the `Authorization` header and give you access to all SumUp all of API.
+        You can create API keys from the [API Keys](https://developer.sumup.com/protected/api-keys/) page
+        of the [Developer portal](https://developer.sumup.com).
+      scheme: bearer
+      type: http
+    OAuth:
+      description: |
 
+        OAuth 2 enables you to authorize on behalf of other users once they give you permission to do so.
+
+        Before you can start using the OAuth 2.0 flow for authorization you need to [generate client credentials](https://developer.sumup.com/protected/oauth-apps/).
+        Client credentials consist of a `client_id` and `client_secret` key-value pair.
         It is possible to create multiple API credentials for each of the applications you connect with your SumUp account.
-
-        Use the API credentials as an authorization header for requests that require such.
 
         Authorization
         ---------
 
-        SumUp uses the <a href='https://tools.ietf.org/html/rfc6749' target='_blank'>OAuth 2.0 authorization framework</a> and supports <a href='https://developer.sumup.com/docs/authorization/#authorization-flows' target='_blank'>two authorization flows</a> for <a href='https://developer.sumup.com/docs/register-app/#3-create-oauth-client-credentials' target='_blank'>obtaining an access token</a>. 
+        SumUp uses the [OAuth 2.0 authorization framework](https://tools.ietf.org/html/rfc6749) and supports [two authorization flows](https://developer.sumup.com/docs/online-payments/introduction/authorization/#authorization-code-flow) for [obtaining an access token](https://developer.sumup.com/docs/online-payments/introduction/register-app/). 
 
         The flow you choose will grant your access token specific permissions. All API calls should include the obtained access token in the `Authorization: Bearer <<valid_access_token>>` format. 
 
-        To complete successful requests, ensure you have requested the <a href='https://developer.sumup.com/docs/authorization/#authorization-scopes' target='_blank'>necessary scopes</a> for your authorization flow of choice.
+        To complete successful requests, ensure you have requested the [necessary scopes](https://developer.sumup.com/docs/online-payments/introduction/authorization/#authorization-scopes) for your authorization flow of choice.
       flows:
         authorizationCode:
           authorizationUrl: 'https://api.sumup.com/authorize'
